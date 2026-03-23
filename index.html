@@ -3,22 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WineCalc - Enologia Data-Driven</title>
-    <link rel="manifest" href="manifest.json">
+    <title>WineCalc Pro - Enologia Digitale</title>
+    <!-- PWA Manifest Inline con icona standard -->
+    <link rel="manifest" href='data:application/manifest+json,{"name":"WineCalc Pro","short_name":"WineCalc","description":"Intelligence Enologica Avanzata","start_url":".","display":"standalone","background_color":"#0f0f1a","theme_color":"#1a1a2e","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/3752/3752541.png","sizes":"512x512","type":"image/png"}]}'>
     <meta name="theme-color" content="#1a1a2e">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         
+        :root {
+            --bg-dark: #0f0f1a;
+            --card-bg: #1a1a2e;
+            --accent: #7c3aed;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0f0f1a;
+            background-color: var(--bg-dark);
             color: #e2e8f0;
             -webkit-tap-highlight-color: transparent;
         }
 
         .card {
-            background: #1a1a2e;
+            background: var(--card-bg);
             border: 1px solid #2d2d44;
             border-radius: 1rem;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
@@ -28,29 +36,28 @@
             background: #252545;
             border: 1px solid #3f3f5f;
             color: white;
-            padding: 0.6rem;
-            border-radius: 0.5rem;
+            padding: 0.65rem;
+            border-radius: 0.6rem;
             width: 100%;
             outline: none;
-            transition: border-color 0.2s;
+            transition: all 0.2s;
             font-size: 0.875rem;
         }
 
-        .input-field:focus { border-color: #7c3aed; box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2); }
+        .input-field:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2); }
 
         .btn-primary { background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); }
         .btn-ai { background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); }
         .btn-sos { background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); }
-        .btn-secondary { background: #2d2d44; border: 1px solid #3f3f5f; }
 
         .tab-active {
-            border-bottom: 3px solid #7c3aed;
-            color: #7c3aed;
+            border-bottom: 3px solid var(--accent);
+            color: var(--accent);
         }
 
         .loader {
             border: 2px solid #f3f3f3;
-            border-top: 2px solid #7c3aed;
+            border-top: 2px solid var(--accent);
             border-radius: 50%;
             width: 16px;
             height: 16px;
@@ -59,17 +66,51 @@
         }
 
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .modal-overlay { background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); }
         
+        .modal-overlay { background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); }
         .indicator { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
         .bg-success { background-color: #10b981; }
         .bg-warning { background-color: #f59e0b; }
         .bg-danger { background-color: #ef4444; }
 
+        .drop-zone {
+            border: 2px dashed #3f3f5f;
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: rgba(37, 37, 69, 0.4);
+        }
+        .drop-zone.drag-over {
+            border-color: var(--accent);
+            background: rgba(124, 58, 237, 0.1);
+        }
+
+        .toggle-btn {
+            background: #252545;
+            border: 1px solid #3f3f5f;
+            padding: 0.4rem 0.7rem;
+            font-size: 0.7rem;
+            border-radius: 0.5rem;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+        .toggle-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
         .step-done { opacity: 0.5; text-decoration: line-through; border-color: #10b981 !important; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
         
-        /* Hidden file input */
-        .file-input { display: none; }
+        .table-ref td, .table-ref th {
+            padding: 8px;
+            border-bottom: 1px solid #2d2d44;
+            text-align: left;
+            font-size: 0.7rem;
+        }
     </style>
 </head>
 <body class="p-4 max-w-lg mx-auto pb-24">
@@ -77,10 +118,15 @@
     <!-- Header -->
     <header class="flex justify-between items-center mb-6 pt-2">
         <div>
-            <h1 class="text-3xl font-bold text-white tracking-tight">Wine<span class="text-purple-500">Calc</span></h1>
-            <p class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold text-xs">Data-Driven Enology</p>
+            <h1 class="text-3xl font-bold text-white tracking-tight leading-none">Wine<span class="text-purple-500">Calc</span></h1>
+            <p class="text-[9px] text-gray-500 uppercase tracking-widest font-bold mt-1">Intelligence Enologica</p>
         </div>
-        <div id="pwa-status" class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+        <div class="flex items-center gap-3">
+            <button onclick="downloadApp()" title="Download Offline App" class="text-gray-500 hover:text-white transition-colors p-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            </button>
+            <div id="pwa-status" class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+        </div>
     </header>
 
     <!-- Navigation -->
@@ -90,20 +136,34 @@
         <button onclick="switchTab('protocol')" id="tab-protocol" class="py-3 px-4 font-semibold text-gray-500">Procedura</button>
         <button onclick="switchTab('sos')" id="tab-sos" class="py-3 px-4 font-semibold text-gray-500">SOS AI</button>
         <button onclick="switchTab('diary')" id="tab-diary" class="py-3 px-4 font-semibold text-gray-500">Diario</button>
+        <button onclick="switchTab('tables')" id="tab-tables" class="py-3 px-4 font-semibold text-gray-500">Tabelle</button>
     </nav>
 
-    <!-- SECTION: DATA INPUT (LAB & YEAST SHEETS) -->
+    <!-- SECTION: DATA INPUT -->
     <section id="section-data" class="space-y-6">
         
-        <!-- Analisi Lab Card -->
+        <!-- Scanner Analisi -->
         <div class="card p-5 border-l-4 border-cyan-500">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xs font-bold text-cyan-400 uppercase tracking-widest">🧪 Ultime Analisi Lab</h2>
-                <button onclick="triggerFile('analysis-file')" class="text-[10px] bg-cyan-600 px-3 py-1 rounded text-white font-bold">📷 SCAN ANALISI</button>
-                <input type="file" id="analysis-file" class="file-input" accept="image/*" onchange="handleImageUpload(event, 'analysis')">
-            </div>
+            <h2 class="text-xs font-bold text-cyan-400 uppercase tracking-widest mb-4">🧪 Scanner Analisi di Laboratorio</h2>
             
-            <div class="grid grid-cols-2 gap-3">
+            <div class="flex gap-2 mb-3">
+                <button onclick="setActiveInput('analysis', 'camera')" id="btn-analysis-camera" class="toggle-btn active">📷 Fotocamera</button>
+                <button onclick="setActiveInput('analysis', 'image')" id="btn-analysis-image" class="toggle-btn">🖼 Immagine</button>
+                <button onclick="setActiveInput('analysis', 'pdf')" id="btn-analysis-pdf" class="toggle-btn">📄 PDF</button>
+            </div>
+
+            <div class="drop-zone" id="drop-zone-analysis" 
+                 onclick="triggerActiveInput('analysis')"
+                 ondragover="handleDragOver(event)" 
+                 ondragleave="handleDragLeave(event)" 
+                 ondrop="handleDrop(event, 'analysis')">
+                <p class="text-[10px] text-gray-400" id="drop-text-analysis">Tocca per caricare il documento d'analisi</p>
+                <input type="file" id="analysis-camera" class="hidden" accept="image/*" capture="environment" onchange="handleFileChange(event, 'analysis')">
+                <input type="file" id="analysis-image" class="hidden" accept="image/*" onchange="handleFileChange(event, 'analysis')">
+                <input type="file" id="analysis-pdf" class="hidden" accept="application/pdf" onchange="handleFileChange(event, 'analysis')">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mt-6 pt-6 border-t border-gray-800">
                 <div>
                     <label class="text-[9px] text-gray-500 uppercase">Zuccheri (g/L)</label>
                     <input type="number" id="lab-sugar" class="input-field" placeholder="220" oninput="saveLabData()">
@@ -121,25 +181,38 @@
                     <input type="number" id="lab-ta" class="input-field" step="0.1" placeholder="6.5" oninput="saveLabData()">
                 </div>
                 <div class="col-span-2">
-                    <label class="text-[9px] text-gray-500 uppercase">NFA (mg/L)</label>
+                    <label class="text-[9px] text-gray-500 uppercase">NFA (Azoto mg/L)</label>
                     <input type="number" id="lab-nfa" class="input-field" placeholder="150" oninput="saveLabData()">
                 </div>
             </div>
-            <p class="text-[9px] text-gray-500 mt-3 italic text-center">I calcoli useranno questi valori come base predefinita.</p>
         </div>
 
-        <!-- Scheda Lievito Card -->
+        <!-- Scanner Scheda Lievito -->
         <div class="card p-5 border-l-4 border-yellow-500">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xs font-bold text-yellow-500 uppercase tracking-widest">📖 Scheda Lievito</h2>
-                <button onclick="triggerFile('yeast-file')" class="text-[10px] bg-yellow-600 px-3 py-1 rounded text-white font-bold">📷 SCAN SCHEDA</button>
-                <input type="file" id="yeast-file" class="file-input" accept="image/*" onchange="handleImageUpload(event, 'yeast')">
+            <h2 class="text-xs font-bold text-yellow-500 uppercase tracking-widest mb-4">📖 Scanner Scheda Tecnica Lievito</h2>
+            
+            <div class="flex gap-2 mb-3">
+                <button onclick="setActiveInput('yeast', 'camera')" id="btn-yeast-camera" class="toggle-btn active">📷 Fotocamera</button>
+                <button onclick="setActiveInput('yeast', 'image')" id="btn-yeast-image" class="toggle-btn">🖼 Immagine</button>
+                <button onclick="setActiveInput('yeast', 'pdf')" id="btn-yeast-pdf" class="toggle-btn">📄 PDF</button>
             </div>
-            <div class="space-y-3">
-                <input type="text" id="yeast-name" class="input-field" placeholder="Nome Lievito (es. Lalvin EC1118)" oninput="saveYeastSheet()">
+
+            <div class="drop-zone" id="drop-zone-yeast" 
+                 onclick="triggerActiveInput('yeast')"
+                 ondragover="handleDragOver(event)" 
+                 ondragleave="handleDragLeave(event)" 
+                 ondrop="handleDrop(event, 'yeast')">
+                <p class="text-[10px] text-gray-400" id="drop-text-yeast">Tocca per caricare la scheda del produttore</p>
+                <input type="file" id="yeast-camera" class="hidden" accept="image/*" capture="environment" onchange="handleFileChange(event, 'yeast')">
+                <input type="file" id="yeast-image" class="hidden" accept="image/*" onchange="handleFileChange(event, 'yeast')">
+                <input type="file" id="yeast-pdf" class="hidden" accept="application/pdf" onchange="handleFileChange(event, 'yeast')">
+            </div>
+
+            <div class="space-y-3 mt-6 pt-6 border-t border-gray-800">
+                <input type="text" id="yeast-name" class="input-field" placeholder="Nome Lievito" oninput="saveYeastSheet()">
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="text-[9px] text-gray-500 uppercase">Dose Consigl. (g/hL)</label>
+                        <label class="text-[9px] text-gray-500 uppercase">Dose (g/hL)</label>
                         <input type="number" id="yeast-dose" class="input-field" placeholder="20" oninput="saveYeastSheet()">
                     </div>
                     <div>
@@ -149,82 +222,85 @@
                 </div>
             </div>
         </div>
-
-        <button onclick="switchTab('calc')" class="btn-primary w-full py-4 rounded-xl font-bold text-sm shadow-xl flex items-center justify-center gap-2">
-            VAI AI CALCOLI BASATI SUI DATI ➔
-        </button>
     </section>
 
     <!-- SECTION: CALCULATION -->
     <section id="section-calc" class="hidden space-y-6">
-        
-        <!-- Tank Context Header -->
-        <div class="card p-4 bg-purple-900/10 border-purple-500/30 flex justify-between items-center">
+        <div class="card p-4 bg-purple-900/10 border-purple-500/20 flex justify-between items-center">
             <div class="text-[11px]">
-                <span class="text-gray-400">Dati Lab:</span> 
-                <span class="text-white font-bold" id="ctx-summary">Nessuna analisi caricata</span>
+                <span class="text-gray-400">Database attivo:</span> 
+                <span class="text-white font-bold" id="ctx-summary">Nessun dato lab</span>
             </div>
-            <button onclick="switchTab('data')" class="text-[9px] underline text-purple-400">MODIFICA</button>
+            <button onclick="switchTab('data')" class="text-[9px] underline text-purple-400 font-bold uppercase tracking-tight">Aggiorna Analisi</button>
         </div>
 
         <div class="card p-5">
-            <h2 class="text-xs font-bold mb-4 text-purple-400 uppercase tracking-widest">📦 Volume & Obiettivo</h2>
+            <h2 class="text-xs font-bold mb-4 text-purple-400 uppercase tracking-widest">⚙️ Settaggio Operativo</h2>
             <div class="grid grid-cols-2 gap-3">
                 <div class="col-span-2">
+                    <label class="text-[10px] text-gray-500 uppercase">Tipologia Intervento</label>
                     <select id="op-type" class="input-field mt-1" onchange="updateCalculations()">
-                        <option value="FA">Fermentazione Alcolica</option>
+                        <option value="FA">Fermentazione Primaria</option>
                         <option value="TR">Tiraggio (6 bar)</option>
-                        <option value="RI">Rifermentazione (3 bar)</option>
+                        <option value="RI">Rifermentazione Charmat (3 bar)</option>
                     </select>
                 </div>
                 <div>
-                    <label class="text-[10px] text-gray-500 uppercase">Volume (L)</label>
+                    <label class="text-[10px] text-gray-500 uppercase font-bold">Volume Vasca (L)</label>
                     <input type="number" id="volume" class="input-field mt-1" placeholder="5000" oninput="updateCalculations()">
                 </div>
                 <div>
-                    <label class="text-[10px] text-gray-500 uppercase">Zuccheri Residui (g/L)</label>
+                    <label class="text-[10px] text-gray-500 uppercase font-bold">Zucch. Residui (g/L)</label>
                     <input type="number" id="calc-sugar-res" class="input-field mt-1" placeholder="0" oninput="updateCalculations()">
                 </div>
             </div>
         </div>
 
-        <!-- I calcoli qui sotto useranno labData.ph, labData.so2lib, etc. -->
         <div class="grid grid-cols-1 gap-4">
             <div class="card p-4 border-l-4 border-cyan-500">
-                <h3 class="text-xs font-bold text-cyan-400 uppercase mb-3">🛡️ Metabisolfito Necessario</h3>
-                <div class="flex items-center gap-2">
-                    <input type="number" id="so2-target" class="input-field text-sm" placeholder="Target SO2 Libera (mg/L)" oninput="updateCalculations()">
-                    <div class="bg-gray-800 px-4 py-2 rounded-lg font-bold text-white whitespace-nowrap"><span id="res-meta-g">0</span> g</div>
+                <h3 class="text-xs font-bold text-cyan-400 uppercase mb-3">🛡️ SO₂ Libera & Molecolare</h3>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <input type="number" id="so2-target" class="input-field text-sm" placeholder="Target mg/L" oninput="updateCalculations()">
+                    <div class="bg-gray-800 flex flex-col justify-center items-center rounded-lg border border-cyan-500/20">
+                        <span class="text-[9px] text-gray-500 uppercase">Metabisolfito</span>
+                        <span class="font-bold text-white text-lg"><span id="res-meta-g">0</span> g</span>
+                    </div>
                 </div>
-                <p class="text-[9px] text-gray-500 mt-2">Basato su SO2 Libera Lab: <span id="ctx-so2">0</span> mg/L</p>
+                <div class="p-2 bg-black/20 rounded text-[10px] flex justify-between">
+                    <span class="text-gray-400">SO₂ Molecolare Attuale:</span>
+                    <b id="res-so2-mol" class="text-cyan-300">0.00 mg/L</b>
+                </div>
             </div>
 
             <div class="card p-4 border-l-4 border-orange-500">
                 <h3 class="text-xs font-bold text-orange-400 uppercase mb-3">🍋 Correzione pH</h3>
                 <div class="flex items-center gap-2">
                     <input type="number" id="ph-target" class="input-field text-sm" step="0.01" placeholder="Target pH" oninput="updateCalculations()">
-                    <div class="bg-gray-800 px-2 py-2 rounded-lg font-bold text-white text-[11px] flex-1 text-center"><span id="res-acidity-advice">N/A</span></div>
+                    <div class="bg-gray-800 p-2 rounded-lg font-bold text-white text-[10px] flex-1 text-center h-10 flex items-center justify-center border border-orange-500/20">
+                        <span id="res-acidity-advice">N/A</span>
+                    </div>
                 </div>
-                <p class="text-[9px] text-gray-500 mt-2">Basato su pH Lab: <span id="ctx-ph">0</span></p>
             </div>
         </div>
 
-        <!-- NFA / Nutrizione -->
         <div class="card p-5 border-l-4 border-emerald-500">
-            <h2 class="text-xs font-bold mb-4 text-emerald-500 uppercase tracking-widest">🌱 Integrazione Azotata (NFA)</h2>
-            <div id="res-nfa-box" class="bg-emerald-900/10 p-3 rounded text-[11px] space-y-2">
-                <p class="text-gray-400">NFA Attuale: <b id="ctx-nfa" class="text-white">0 mg/L</b></p>
-                <p class="text-gray-400">Target teorico: <b id="res-nfa-target" class="text-emerald-400">0 mg/L</b></p>
-                <div class="p-2 bg-black/20 rounded border border-emerald-500/30">
-                    Integrazione totale: <b id="res-nfa-add" class="text-white">0 g</b> (Nutriente)
+            <h2 class="text-xs font-bold mb-3 text-emerald-500 uppercase tracking-widest">🌱 Nutrizione (NFA)</h2>
+            <div class="bg-emerald-900/10 p-3 rounded text-[11px] space-y-2 border border-emerald-500/20">
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Target NFA Teorico:</span>
+                    <b id="res-nfa-target" class="text-emerald-400">0 mg/L</b>
+                </div>
+                <div class="p-2 bg-black/30 rounded text-center">
+                    <p class="text-[9px] text-gray-500 uppercase mb-1">Integrazione Totale</p>
+                    <b id="res-nfa-add" class="text-white text-lg">0 g</b>
                 </div>
             </div>
         </div>
 
-        <div class="space-y-3 pt-4">
-            <input type="text" id="diary-tank-name" class="input-field text-center font-bold" placeholder="NOME VASCA">
-            <button onclick="saveDiaryEntry()" class="btn-primary w-full py-4 rounded-xl font-bold text-sm shadow-xl flex items-center justify-center gap-2">
-                💾 SALVA NEL DIARIO
+        <div class="space-y-3 pt-2">
+            <input type="text" id="diary-tank-name" class="input-field text-center font-bold" placeholder="ID VASCA / LOTTO">
+            <button onclick="saveDiaryEntry()" class="btn-primary w-full py-4 rounded-xl font-bold text-sm shadow-xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+                💾 SALVA NEL REGISTRO DIARIO
             </button>
         </div>
     </section>
@@ -233,48 +309,196 @@
     <section id="section-protocol" class="hidden space-y-6">
         <div class="card p-5 border-l-4 border-green-500">
             <h2 class="text-xl font-bold text-green-400 mb-6">📋 Protocollo Operativo</h2>
-            <div id="protocol-steps" class="space-y-4">
-                <div class="p-4 border border-gray-700 rounded-lg" id="step-1">
-                    <h4 class="font-bold text-sm flex justify-between">1. Preparazione Acqua <button onclick="markStep(1)" class="text-green-500 text-[10px]">FATTO</button></h4>
-                    <p class="text-xs text-gray-400 mt-1">Prepara <b class="proto-water-val">0</b> <b class="proto-water-unit">ml</b> di acqua a 37°C.</p>
+            <div class="space-y-4" id="protocol-steps">
+                <div class="p-4 border border-gray-700 rounded-lg bg-gray-900/20" id="step-1">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="font-bold text-sm">1. Preparazione Acqua</h4>
+                            <p class="text-[10px] text-gray-500 mt-1">Acqua pulita a 37-38°C</p>
+                        </div>
+                        <button onclick="markStep(1)" class="bg-green-600 px-2 py-1 rounded text-[9px] font-bold text-white uppercase">Fatto</button>
+                    </div>
+                    <p class="text-lg font-bold text-white mt-2"><span class="proto-water-val">0</span> <span class="proto-water-unit">ml</span></p>
                 </div>
-                <!-- Altri step... -->
+                
+                <div class="p-4 border border-gray-700 rounded-lg bg-gray-900/20" id="step-2">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-bold text-sm">2. Reidratazione</h4>
+                        <button onclick="markStep(2)" class="bg-green-600 px-2 py-1 rounded text-[9px] font-bold text-white uppercase">Fatto</button>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <button onclick="startTimer(1200, 'timer-20')" class="btn-timer px-4 py-2 rounded text-[10px] font-bold text-blue-400 uppercase">Start 20'</button>
+                        <span id="timer-20" class="font-mono text-2xl text-white">20:00</span>
+                    </div>
+                </div>
+
+                <div id="step-sugar" class="hidden p-4 border border-pink-700 rounded-lg bg-pink-900/10">
+                    <h4 class="font-bold text-sm text-pink-400 uppercase">3. Aggiunta Zucchero (Liquor)</h4>
+                    <p class="text-xs text-gray-400 mt-1 italic">Sciogliere accuratamente prima dell'inoculo</p>
+                    <p class="text-2xl font-bold text-white mt-2"><span id="proto-sugar-val">0</span> kg</p>
+                </div>
             </div>
-            <button onclick="resetProtocol()" class="w-full mt-6 py-2 text-[10px] text-gray-500 border border-gray-800 rounded">RESET</button>
+            <button onclick="resetProtocol()" class="w-full mt-8 py-2 text-[10px] text-gray-600 font-bold uppercase border border-gray-800 rounded">Reset Procedura</button>
         </div>
     </section>
 
-    <!-- Modal AI Analyzer -->
+    <!-- Modal Vision AI -->
     <div id="ai-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-6 hidden">
         <div class="card w-full max-h-[85vh] overflow-hidden flex flex-col border-purple-500 border-2">
             <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-purple-900/20">
-                <h3 id="modal-title" class="font-bold text-purple-400 text-sm">Vision AI Scanner ✨</h3>
-                <button onclick="closeModal()" class="text-gray-400 text-2xl">&times;</button>
+                <h3 id="modal-title" class="font-bold text-purple-400 text-sm flex items-center gap-2">
+                    <span class="loader hidden" id="modal-loader"></span>
+                    Vision AI Analysis ✨
+                </h3>
+                <button onclick="closeModal()" class="text-gray-400 text-2xl font-light">&times;</button>
             </div>
             <div id="ai-modal-body" class="p-6 overflow-y-auto text-xs leading-relaxed text-gray-300 italic">
                 <div class="flex flex-col items-center justify-center py-10" id="ai-loading-view">
                     <div class="loader mb-4"></div>
-                    <p>L'IA sta leggendo l'immagine...</p>
+                    <p class="animate-pulse">Analisi del documento in corso...</p>
                 </div>
-                <div id="ai-result-view" class="hidden"></div>
             </div>
         </div>
     </div>
 
+    <!-- Toast UI -->
     <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full text-xs shadow-2xl transition-opacity opacity-0 pointer-events-none z-[100] border border-gray-700"></div>
 
     <script>
-        const apiKey = ""; // La chiave viene fornita dall'ambiente
+        const apiKey = ""; 
         const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
 
-        // Global State
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
         let labData = JSON.parse(localStorage.getItem('winecalc_lab') || '{"sugar":0, "ph":3.5, "so2lib":0, "ta":6, "nfa":150}');
         let yeastSheet = JSON.parse(localStorage.getItem('winecalc_yeast') || '{"name":"", "dose":20, "temp":""}');
+        let activeInputModes = { analysis: 'camera', yeast: 'camera' };
+        let timerInterval;
 
         window.onload = () => {
             initInputs();
             updateCalculations();
+            if ('serviceWorker' in navigator) {
+                const sw = `self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));`;
+                const blob = new Blob([sw], {type: 'text/javascript'});
+                navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+            }
         };
+
+        function downloadApp() {
+            const html = document.documentElement.outerHTML;
+            const blob = new Blob([html], { type: 'text/html' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'WineCalc_Professional.html';
+            a.click();
+        }
+
+        function setActiveInput(context, mode) {
+            activeInputModes[context] = mode;
+            ['camera', 'image', 'pdf'].forEach(m => {
+                document.getElementById(`btn-${context}-${m}`).classList.toggle('active', m === mode);
+            });
+            const labels = { camera: 'Tocca per la Fotocamera', image: 'Trascina o tocca l\'Immagine', pdf: 'Trascina o tocca il PDF' };
+            document.getElementById(`drop-text-${context}`).innerText = labels[mode];
+        }
+
+        function triggerActiveInput(context) {
+            document.getElementById(`${context}-${activeInputModes[context]}`).click();
+        }
+
+        function handleFileChange(event, context) {
+            const file = event.target.files[0];
+            if (file) processFile(file, context);
+        }
+
+        function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+        function handleDragLeave(e) { e.preventDefault(); e.currentTarget.classList.remove('drag-over'); }
+        function handleDrop(e, context) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) processFile(file, context);
+        }
+
+        async function processFile(file, context) {
+            if (file.type === 'application/pdf') {
+                await handlePDF(file, context);
+            } else if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = async (e) => scanImageWithAI(e.target.result.split(',')[1], context, 'image');
+                reader.readAsDataURL(file);
+            } else {
+                showToast("Formato file non supportato.");
+            }
+        }
+
+        async function handlePDF(file, context) {
+            showModal("Scanner PDF ✨");
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                const page = await pdf.getPage(1);
+                const textContent = await page.getTextContent();
+                const text = textContent.items.map(i => i.str).join(' ');
+
+                if (text.trim().length > 40) {
+                    await scanImageWithAI(text, context, 'text');
+                } else {
+                    const viewport = page.getViewport({ scale: 2 });
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                    await scanImageWithAI(canvas.toDataURL('image/png').split(',')[1], context, 'image');
+                }
+            } catch (error) {
+                showToast("Errore lettura PDF.");
+                closeModal();
+            }
+        }
+
+        async function scanImageWithAI(content, context, contentType) {
+            showModal("Scanner IA ✨");
+            document.getElementById('modal-loader').classList.remove('hidden');
+
+            const extractionPrompt = context === 'analysis' 
+                ? "Estrai questi parametri da analisi lab: sugar (zuccheri g/L), ph, so2lib (SO2 libera mg/L), ta (acidità g/L), nfa (mg/L). Restituisci SOLO JSON."
+                : "Estrai da scheda lievito: name (nome), dose (dose g/hL), temp (range gradi). Restituisci SOLO JSON.";
+
+            const parts = [{ text: extractionPrompt }];
+            if (contentType === 'image') parts.push({ inlineData: { mimeType: "image/png", data: content } });
+            else parts.push({ text: `Testo estratto: ${content}` });
+
+            try {
+                const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: { responseMimeType: "application/json" } })
+                });
+
+                const result = await response.json();
+                const data = JSON.parse(result.candidates[0].content.parts[0].text);
+
+                if (context === 'analysis') {
+                    labData = { ...labData, ...data };
+                    localStorage.setItem('winecalc_lab', JSON.stringify(labData));
+                } else {
+                    yeastSheet = { ...yeastSheet, ...data };
+                    localStorage.setItem('winecalc_yeast', JSON.stringify(yeastSheet));
+                }
+                
+                initInputs();
+                updateCalculations();
+                showToast("Dati estratti con successo! ✨");
+            } catch (e) {
+                showToast("Errore di analisi IA.");
+            } finally {
+                document.getElementById('modal-loader').classList.add('hidden');
+                closeModal();
+            }
+        }
 
         function initInputs() {
             document.getElementById('lab-sugar').value = labData.sugar || "";
@@ -282,7 +506,6 @@
             document.getElementById('lab-so2-lib').value = labData.so2lib || "";
             document.getElementById('lab-ta').value = labData.ta || "";
             document.getElementById('lab-nfa').value = labData.nfa || "";
-            
             document.getElementById('yeast-name').value = yeastSheet.name || "";
             document.getElementById('yeast-dose').value = yeastSheet.dose || "";
             document.getElementById('yeast-temp').value = yeastSheet.temp || "";
@@ -301,138 +524,81 @@
         }
 
         function saveYeastSheet() {
-            yeastSheet = {
-                name: document.getElementById('yeast-name').value,
-                dose: parseFloat(document.getElementById('yeast-dose').value) || 20,
-                temp: document.getElementById('yeast-temp').value
+            yeastSheet = { 
+                name: document.getElementById('yeast-name').value, 
+                dose: parseFloat(document.getElementById('yeast-dose').value) || 20, 
+                temp: document.getElementById('yeast-temp').value 
             };
             localStorage.setItem('winecalc_yeast', JSON.stringify(yeastSheet));
             updateCalculations();
         }
 
-        function triggerFile(id) { document.getElementById(id).click(); }
-
-        async function handleImageUpload(event, type) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const base64 = e.target.result.split(',')[1];
-                await scanImageWithAI(base64, type);
-            };
-            reader.readAsDataURL(file);
-        }
-
-        async function scanImageWithAI(base64, type) {
-            showModal("Scanner IA ✨", "");
-            document.getElementById('ai-loading-view').classList.remove('hidden');
-            document.getElementById('ai-result-view').classList.add('hidden');
-
-            const prompt = type === 'analysis' 
-                ? "Estrai i seguenti dati da questa analisi enologica in formato JSON: sugar (zuccheri g/L), ph, so2lib (mg/L), ta (acidità totale), nfa (mg/L). Restituisci solo il JSON."
-                : "Estrai i dati da questa scheda tecnica di lievito in formato JSON: name (nome), dose (dose consigliata g/hL), temp (range temperatura). Restituisci solo il JSON.";
-
-            try {
-                const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [
-                                { text: prompt },
-                                { inlineData: { mimeType: "image/png", data: base64 } }
-                            ]
-                        }],
-                        generationConfig: { responseMimeType: "application/json" }
-                    })
-                });
-
-                const result = await response.json();
-                const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                const extractedData = JSON.parse(jsonText);
-
-                if (type === 'analysis') {
-                    labData = { ...labData, ...extractedData };
-                    localStorage.setItem('winecalc_lab', JSON.stringify(labData));
-                } else {
-                    yeastSheet = { ...yeastSheet, ...extractedData };
-                    localStorage.setItem('winecalc_yeast', JSON.stringify(yeastSheet));
-                }
-
-                initInputs();
-                updateCalculations();
-                showToast("Dati estratti con successo! ✨");
-                closeModal();
-            } catch (error) {
-                console.error(error);
-                showToast("Errore durante la lettura dell'immagine.");
-                closeModal();
-            }
-        }
-
         function updateCalculations() {
             const vol = parseFloat(document.getElementById('volume').value) || 0;
+            const resSugar = parseFloat(document.getElementById('calc-sugar-res').value) || 0;
             const type = document.getElementById('op-type').value;
 
-            // Update UI Summary
-            document.getElementById('ctx-summary').innerText = `pH ${labData.ph} | Zucch ${labData.sugar}g/L`;
-            document.getElementById('ctx-so2').innerText = labData.so2lib;
-            document.getElementById('ctx-ph').innerText = labData.ph;
-            document.getElementById('ctx-nfa').innerText = labData.nfa + " mg/L";
-
-            // 1. SO2 Calculation based on lab so2lib
+            document.getElementById('ctx-summary').innerText = `pH ${labData.ph} | ${labData.sugar}g/L Zucch.`;
+            
             const targetSO2 = parseFloat(document.getElementById('so2-target').value) || 0;
-            const diffSO2 = Math.max(0, targetSO2 - labData.so2lib);
-            const metaG = (diffSO2 * vol) / 570; // 1g meta = 0.57g SO2
-            document.getElementById('res-meta-g').innerText = metaG.toFixed(1);
+            const meta = (Math.max(0, targetSO2 - labData.so2lib) * vol) / 570;
+            document.getElementById('res-meta-g').innerText = meta.toFixed(1);
 
-            // 2. Acidity Correction
+            const molecular = labData.so2lib / (1 + Math.pow(10, labData.ph - 1.81));
+            document.getElementById('res-so2-mol').innerText = molecular.toFixed(3) + " mg/L";
+
             const phT = parseFloat(document.getElementById('ph-target').value);
             const adv = document.getElementById('res-acidity-advice');
             if (phT) {
                 const diff = labData.ph - phT;
-                if (diff > 0) adv.innerText = `Tartarico: +${(diff * 1.5 * vol / 1000).toFixed(2)} kg`;
-                else adv.innerText = `Bicarbonato: +${(Math.abs(diff) * 2 * vol / 1000).toFixed(2)} kg`;
-            } else {
-                adv.innerText = "N/A";
-            }
+                adv.innerText = diff > 0 ? `Tartarico: +${(diff * 1.5 * vol / 1000).toFixed(2)} kg` : `Bic. K: +${(Math.abs(diff) * 2.1 * vol / 1000).toFixed(2)} kg`;
+            } else adv.innerText = "N/A";
+            
+            const targetNFA = Math.round(labData.sugar * 0.9);
+            document.getElementById('res-nfa-target').innerText = targetNFA + " mg/L";
+            const addNFA = Math.max(0, targetNFA - labData.nfa);
+            document.getElementById('res-nfa-add').innerText = (addNFA * vol / 1000).toFixed(0) + " g";
 
-            // 3. NFA / Nutrition
-            // Target teorico basato sugli zuccheri (0.9 mg NFA per g/L zucchero)
-            const nfaTarget = Math.round(labData.sugar * 0.9);
-            document.getElementById('res-nfa-target').innerText = nfaTarget + " mg/L";
-            const nfaDiff = Math.max(0, nfaTarget - labData.nfa);
-            const nutrG = (nfaDiff * vol) / 1000; // mg/L * L -> mg -> g (approx)
-            document.getElementById('res-nfa-add').innerText = nutrG.toFixed(0) + " g";
-
-            // 4. Yeast sync
             const yDose = yeastSheet.dose || 20;
-            const yTot = Math.round(yDose * vol / 100);
-            document.querySelectorAll('.proto-water-val').forEach(el => el.innerText = yTot * 10);
+            const yWeight = Math.round(yDose * vol / 100);
+            document.querySelectorAll('.proto-water-val').forEach(el => el.innerText = yWeight * 10);
+            
+            const stepSugar = document.getElementById('step-sugar');
+            if (type !== 'FA') {
+                stepSugar.classList.remove('hidden');
+                const tSugar = type === 'TR' ? 24 : 18;
+                document.getElementById('proto-sugar-val').innerText = Math.max(0, (tSugar - resSugar) * vol / 1000).toFixed(2);
+            } else stepSugar.classList.add('hidden');
         }
 
         function switchTab(tab) {
-            ['data', 'calc', 'protocol', 'sos', 'diary'].forEach(t => {
-                document.getElementById('section-' + t)?.classList.toggle('hidden', t !== tab);
-                document.getElementById('tab-' + t)?.classList.toggle('tab-active', t === tab);
-                document.getElementById('tab-' + t)?.classList.toggle('text-gray-500', t !== tab);
+            ['data', 'calc', 'protocol', 'sos', 'diary', 'tables'].forEach(t => {
+                const el = document.getElementById('section-' + t);
+                if (el) el.classList.toggle('hidden', t !== tab);
+                const btn = document.getElementById('tab-' + t);
+                if (btn) {
+                    btn.classList.toggle('tab-active', t === tab);
+                    btn.classList.toggle('text-gray-500', t !== tab);
+                }
             });
         }
 
-        function showModal(title, body) {
-            document.getElementById('modal-title').innerText = title;
-            document.getElementById('ai-modal').classList.remove('hidden');
+        function startTimer(duration, elementId) {
+            clearInterval(timerInterval);
+            let timer = duration;
+            timerInterval = setInterval(() => {
+                let m = Math.floor(timer / 60);
+                let s = timer % 60;
+                document.getElementById(elementId).innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+                if (--timer < 0) { clearInterval(timerInterval); showToast("⏳ Tempo Scaduto!"); }
+            }, 1000);
         }
-        function closeModal() { document.getElementById('ai-modal').classList.add('hidden'); }
-        function showToast(m) {
-            const t = document.getElementById('toast');
-            t.innerText = m; t.classList.remove('opacity-0');
-            setTimeout(() => t.classList.add('opacity-0'), 3000);
-        }
-        function markStep(s) { document.getElementById('step-'+s).classList.toggle('step-done'); }
-        function resetProtocol() { [1].forEach(s => document.getElementById('step-'+s).classList.remove('step-done')); }
 
+        function showModal(title) { document.getElementById('modal-title').innerText = title; document.getElementById('ai-modal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('ai-modal').classList.add('hidden'); }
+        function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.classList.remove('opacity-0'); setTimeout(() => t.classList.add('opacity-0'), 3500); }
+        function markStep(n) { document.getElementById('step-'+n).classList.toggle('step-done'); }
+        function resetProtocol() { [1,2].forEach(n => document.getElementById('step-'+n).classList.remove('step-done')); clearInterval(timerInterval); document.getElementById('timer-20').innerText = "20:00"; }
     </script>
 </body>
 </html>
