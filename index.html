@@ -42,6 +42,7 @@
         <button onclick="switchTab('data')" id="tab-data" class="py-3 px-4 font-semibold tab-active">Dati Analisi</button>
         <button onclick="switchTab('calc')" id="tab-calc" class="py-3 px-4 font-semibold text-gray-500">Calcoli</button>
         <button onclick="switchTab('sos')" id="tab-sos" class="py-3 px-4 font-semibold text-gray-500">SOS AI</button>
+        <button onclick="switchTab('storico')" id="tab-storico" class="py-3 px-4 font-semibold text-gray-500">Storico</button>
         <button onclick="switchTab('tables')" id="tab-tables" class="py-3 px-4 font-semibold text-gray-500 text-nowrap">Tabelle Ref.</button>
     </nav>
 
@@ -82,8 +83,13 @@
             <h2 class="text-xs font-bold text-purple-400 uppercase tracking-widest">⚙️ Settaggio Vasca</h2>
             <div class="grid grid-cols-2 gap-3">
                 <div class="col-span-2">
+                    <label class="text-[10px] text-gray-500 uppercase">Nome Vasca</label>
+                    <input type="text" id="vasca-name" class="input-field mt-1" placeholder="Es: Vasca A1">
+                </div>
+                <div class="col-span-2">
                     <label class="text-[10px] text-gray-500 uppercase">Volume Vasca (L)</label>
                     <input type="number" id="volume" class="input-field mt-1" placeholder="Es: 5000" oninput="updateCalculations()">
+                    <button onclick="saveCurrentVasca()" class="btn-primary w-full py-3 rounded-lg font-bold text-xs uppercase tracking-widest mt-3">Salva Vasca</button>
                 </div>
                 <div>
                     <label class="text-[10px] text-gray-500 uppercase">Target Libera (mg/L)</label>
@@ -117,6 +123,16 @@
                 </div>
             </div>
 
+            <div class="card p-4 border-l-4 border-amber-500 flex justify-between items-center">
+                <div>
+                    <h3 class="text-xs font-bold text-amber-400 uppercase">Nutrienti Azotati (DAP)</h3>
+                    <p class="text-[9px] text-gray-500">Dose per target NFA 200 mg/L</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-2xl font-bold text-white" id="res-dap-g">0</span><span class="text-xs ml-1">g</span>
+                </div>
+            </div>
+
             <div class="card p-4 border-l-4 border-emerald-500">
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-tight">SO₂ Molecolare Attuale</h3>
@@ -138,6 +154,11 @@
             <button onclick="askAI()" class="w-full bg-red-600 py-4 rounded-xl font-bold text-sm shadow-lg hover:bg-red-500 transition-colors">CHIEDI AIUTO ALL'IA ✨</button>
         </div>
         <div id="sos-response" class="hidden card p-5 text-[11px] leading-relaxed text-gray-300 bg-gray-900/60 border-red-500/20"></div>
+    </section>
+
+
+    <section id="section-storico" class="hidden space-y-4">
+        <div id="storico-list" class="space-y-3"></div>
     </section>
 
     <section id="section-tables" class="hidden space-y-4">
@@ -196,7 +217,7 @@
         
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        window.onload = () => { initInputs(); updateCalculations(); };
+        window.onload = () => { initInputs(); updateCalculations(); renderStoricoVasche(); };
 
         function initInputs() {
             document.getElementById('lab-sugar').value = labData.sugar || "";
@@ -241,6 +262,10 @@
             } else {
                 document.getElementById('res-tart-kg').innerText = "0";
             }
+
+            // 4. Nutrienti Azotati (DAP) per target NFA 200 mg/L
+            const dapDose = ((Math.max(0, 200 - labData.nfa) * vol) / 1000) * 0.21;
+            document.getElementById('res-dap-g').innerText = dapDose.toFixed(0);
 
             document.getElementById('ctx-summary').innerText = `Analisi: pH ${labData.ph} | ${labData.sugar} g/L Zuccheri`;
         }
@@ -350,9 +375,39 @@
             }
         }
 
+        function saveCurrentVasca() {
+            const vascaName = (document.getElementById('vasca-name').value || '').trim() || 'Vasca senza nome';
+            const volume = parseFloat(document.getElementById('volume').value) || 0;
+            const storico = JSON.parse(localStorage.getItem('winecalc_vasche') || '[]');
+            storico.unshift({
+                nome: vascaName,
+                volume,
+                labData: { ...labData },
+                timestamp: new Date().toISOString()
+            });
+            localStorage.setItem('winecalc_vasche', JSON.stringify(storico));
+            renderStoricoVasche();
+            showToast('VASCA SALVATA ✅');
+        }
+
+        function renderStoricoVasche() {
+            const storico = JSON.parse(localStorage.getItem('winecalc_vasche') || '[]');
+            const container = document.getElementById('storico-list');
+            if (!container) return;
+            if (!storico.length) {
+                container.innerHTML = '<div class="card p-4 text-[10px] text-gray-400">Nessuna vasca salvata.</div>';
+                return;
+            }
+            container.innerHTML = storico.map(v => {
+                const data = new Date(v.timestamp).toLocaleString('it-IT');
+                const ph = v.labData?.ph ?? '-';
+                return `<div class="card p-4 border-l-4 border-purple-500"><p class="text-xs font-bold text-white">${v.nome}</p><p class="text-[10px] text-gray-500">${data}</p><p class="text-[10px] text-purple-300">pH: ${ph}</p></div>`;
+            }).join('');
+        }
+
         // UI HELPERS
         function switchTab(tab) {
-            ['data', 'calc', 'sos', 'tables'].forEach(t => {
+            ['data', 'calc', 'sos', 'storico', 'tables'].forEach(t => {
                 document.getElementById('section-' + t).classList.toggle('hidden', t !== tab);
                 document.getElementById('tab-' + t).className = t === tab ? "py-3 px-4 font-semibold tab-active" : "py-3 px-4 font-semibold text-gray-500";
             });
