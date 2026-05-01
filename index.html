@@ -488,7 +488,7 @@ ${ocrText}
             container.innerHTML = storico.map(v => {
                 const data = new Date(v.timestamp).toLocaleString('it-IT');
                 const ph = v.labData?.ph ?? '-';
-                return `<div class="card p-4 border-l-4 border-purple-500"><p class="text-xs font-bold text-white">${v.nomeVasca || 'Vasca senza nome'}</p><p class="text-[10px] text-gray-500">${data}</p><p class="text-[10px] text-purple-300">pH: ${ph}</p></div>`;
+                return `<div class="card p-4 border-l-4 border-purple-500"><p class="text-xs font-bold text-white">${v.nomeVasca || v.nome || 'Vasca senza nome'}</p><p class="text-[10px] text-gray-500">${data}</p><p class="text-[10px] text-purple-300">pH: ${ph}</p></div>`;
             }).join('');
         }
 
