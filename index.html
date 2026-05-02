@@ -462,10 +462,22 @@ ${ocrText}
             }
         }
 
+
+        function normalizeStoricoVasche(storico) {
+            const normalized = (Array.isArray(storico) ? storico : []).map(v => ({
+                nomeVasca: (v?.nomeVasca || v?.nome || v?.vascaName || '').toString().trim() || 'Vasca senza nome',
+                volume: Number.isFinite(Number(v?.volume)) ? Number(v.volume) : 0,
+                labData: (v && typeof v.labData === 'object' && v.labData !== null) ? v.labData : {},
+                timestamp: v?.timestamp || new Date().toISOString()
+            }));
+            localStorage.setItem('winecalc_vasche', JSON.stringify(normalized));
+            return normalized;
+        }
+
         function saveCurrentVasca() {
             const vascaName = (document.getElementById('vasca-name').value || '').trim() || 'Vasca senza nome';
             const volume = parseFloat(document.getElementById('volume').value) || 0;
-            const storico = JSON.parse(localStorage.getItem('winecalc_vasche') || '[]');
+            const storico = normalizeStoricoVasche(JSON.parse(localStorage.getItem('winecalc_vasche') || '[]'));
             storico.unshift({
                 nomeVasca: vascaName,
                 volume,
@@ -478,7 +490,7 @@ ${ocrText}
         }
 
         function renderStoricoVasche() {
-            const storico = JSON.parse(localStorage.getItem('winecalc_vasche') || '[]');
+            const storico = normalizeStoricoVasche(JSON.parse(localStorage.getItem('winecalc_vasche') || '[]'));
             const container = document.getElementById('storico-list');
             if (!container) return;
             if (!storico.length) {
